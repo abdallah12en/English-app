@@ -1,0 +1,41 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Arrange files (works with flat uploads from a phone)
+        run: |
+          mkdir -p app/src/main/assets app/src/main/java/com/example/englishapp
+          [ -f index.html ] && mv index.html app/src/main/assets/index.html || true
+          [ -f MainActivity.kt ] && mv MainActivity.kt app/src/main/java/com/example/englishapp/MainActivity.kt || true
+          [ -f AndroidManifest.xml ] && mv AndroidManifest.xml app/src/main/AndroidManifest.xml || true
+          mkdir -p app/src/main/res/drawable
+          [ -f Reminder.kt ] && mv Reminder.kt app/src/main/java/com/example/englishapp/Reminder.kt || true
+          [ -f ic_launcher.xml ] && mv ic_launcher.xml app/src/main/res/drawable/ic_launcher.xml || true
+          [ -f ic_notif.xml ] && mv ic_notif.xml app/src/main/res/drawable/ic_notif.xml || true
+          [ -f app.build.gradle ] && mv app.build.gradle app/build.gradle || true
+          find app -type f
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.9'
+
+      - run: gradle assembleDebug --no-daemon --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: english-app-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
